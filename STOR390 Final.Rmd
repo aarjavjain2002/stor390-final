@@ -1,0 +1,1206 @@
+---
+title: "STOR390 Final"
+author: "Aarjav Jain"
+date: "2024-12-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**NOTE: The variable name for the SVR method is occasionally misspelled SVVR instead of SSVR. This does not influence the results in any way which still present it as the correct SSVR spelling. It is a harmless typo in parts of the code.**
+
+# Packages
+
+```{r}
+install.packages("survivalsvm")
+install.packages("survival")
+install.packages("survminer")
+```
+
+```{r}
+library(survivalsvm)
+library(survival)
+library(survminer)
+```
+
+# `veteran` dataset
+
+```{r}
+data(veteran, package = "survival")
+summary(veteran)
+```
+
+```{r}
+head(veteran)
+```
+
+# SSVR (Support Vector Regression)
+
+```{r}
+# Fit the survival SVM model
+survsvm_model <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran, 
+  type = "regression", 
+  gamma.mu = 1, 
+  opt.meth = "quadprog", 
+  kernel = "lin_kernel"
+)
+
+# Print model summary
+print(survsvm_model)
+```
+
+### Extract predicted risk ranks
+
+```{r}
+# Create predictions
+predictions <- predict(survsvm_model, newdata = veteran)
+
+# Extract predicted risk ranks
+predicted_risks <- as.numeric(predictions$predicted)
+
+length(predicted_risks)
+nrow(veteran)
+```
+
+### Calculate C Index
+
+```{r}
+library(survival)
+
+surv_obj <- Surv(veteran$time, veteran$status)
+
+# Compute C-index
+c_index <- concordance(surv_obj ~ predicted_risks)
+print(c_index$concordance)
+```
+
+### SSVR linear, additive, and radial basis function (RBF) kernels on `veteran`
+
+```{r}
+# Linear Kernel
+survsvm_linear <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "regression",
+  gamma.mu = 1,
+  opt.meth = "quadprog",
+  kernel = "lin_kernel"
+)
+predictions_linear <- predict(survsvm_linear, newdata = veteran)
+predicted_risks_linear <- as.numeric(predictions_linear$predicted)
+
+# Compute C-index
+c_index_linear <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_linear)
+
+# Additive Kernel
+survsvm_additive <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "regression",
+  gamma.mu = 1,
+  opt.meth = "quadprog",
+  kernel = "add_kernel"
+)
+predictions_additive <- predict(survsvm_additive, newdata = veteran)
+predicted_risks_additive <- as.numeric(predictions_additive$predicted)
+
+c_index_additive <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_additive)
+
+# RBF Kernel
+survsvm_rbf <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "regression",
+  gamma.mu = 1,
+  opt.meth = "quadprog",
+  kernel = "rbf_kernel"
+)
+predictions_rbf <- predict(survsvm_rbf, newdata = veteran)
+predicted_risks_rbf <- as.numeric(predictions_rbf$predicted)
+
+c_index_rbf <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_rbf)
+
+# Print Results
+cat("C-index for Linear Kernel:", c_index_linear$concordance, "\n")
+
+cat("C-index for Additive Kernel:", c_index_additive$concordance, "\n")
+
+cat("C-index for RBF Kernel:", c_index_rbf$concordance, "\n")
+```
+
+# Ranking (vanBelle1)
+
+### vanbelle1 Linear kernel
+
+```{r}
+# vanbelle1 Approach
+survsvm_vanbelle1_linear <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "vanbelle1",
+  gamma.mu = 1,
+  opt.meth = "quadprog",
+  kernel = "lin_kernel",
+  diff.meth = "makediff1"  # Specify the diff.meth method
+)
+predictions_vanbelle1_linear_full <- predict(survsvm_vanbelle1_linear, newdata = veteran)
+predicted_risks_vanbelle1_linear_full <- as.numeric(predictions_vanbelle1_linear_full$predicted)
+c_index_vanbelle1_linear_full <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_vanbelle1_linear_full)
+
+# Print Results
+cat("C-index for vanbelle1 Approach:", c_index_vanbelle1_linear$concordance, "\n")
+```
+
+### vanbelle1 additive kernel
+
+```{r}
+# vanbelle1 Additive Kernel
+survsvm_vanbelle1_add <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "vanbelle1",
+  gamma.mu = 1,
+  opt.meth = "quadprog",
+  kernel = "add_kernel",
+  diff.meth = "makediff1"  # Specify the diff.meth method
+)
+predictions_vanbelle1_add_full <- predict(survsvm_vanbelle1_add, newdata = veteran)
+predicted_risks_vanbelle1_add_full <- as.numeric(predictions_vanbelle1_add_full$predicted)
+c_index_vanbelle1_add_full <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_vanbelle1_add_full)
+
+# Print Results
+cat("C-index for vanbelle1 Additive Kernel:", c_index_vanbelle1_add_full$concordance, "\n")
+```
+
+### vanbelle1 RBF kernel
+
+```{r}
+# vanbelle1 RBF Kernel
+survsvm_vanbelle1_rbf <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "vanbelle1",
+  gamma.mu = 1,
+  opt.meth = "quadprog",
+  kernel = "rbf_kernel",
+  diff.meth = "makediff1"  # Specify the diff.meth method
+)
+predictions_vanbelle1_rbf_full <- predict(survsvm_vanbelle1_rbf, newdata = veteran)
+predicted_risks_vanbelle1_rbf_full <- as.numeric(predictions_vanbelle1_rbf_full$predicted)
+c_index_vanbelle1_rbf_full <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_vanbelle1_rbf_full)
+
+# Print Results
+cat("C-index for vanbelle1 RBF Kernel:", c_index_vanbelle1_rbf_full$concordance, "\n")
+```
+
+# Hybrid approach
+
+### Hybrid linear kernel
+
+```{r}
+# Hybrid Linear Kernel
+survsvm_hybrid_linear_full <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "hybrid",
+  gamma.mu = c(1, 0.5),  # Two numeric values
+  opt.meth = "quadprog",
+  kernel = "lin_kernel",
+  diff.meth = "makediff1"
+)
+
+# Predict on the veteran dataset
+predictions_hybrid_linear_full <- predict(survsvm_hybrid_linear_full, newdata = veteran)
+predicted_risks_hybrid_linear_full <- as.numeric(predictions_hybrid_linear_full$predicted)
+
+# Compute C-index
+c_index_hybrid_linear_full <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_hybrid_linear_full)
+
+# Print Result
+cat("C-index for Hybrid Linear Approach:", c_index_hybrid_linear_full$concordance, "\n")
+```
+
+### Hybrid additive kernel
+
+```{r}
+# Hybrid Additive Kernel
+survsvm_hybrid_add_full <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "hybrid",
+  gamma.mu = c(1, 0.5),  # Two numeric values
+  opt.meth = "quadprog",
+  kernel = "add_kernel",
+  diff.meth = "makediff1"
+)
+
+# Predict on the veteran dataset
+predictions_hybrid_add_full <- predict(survsvm_hybrid_add_full, newdata = veteran)
+predicted_risks_hybrid_add_full <- as.numeric(predictions_hybrid_add_full$predicted)
+
+# Compute C-index
+c_index_hybrid_add_full <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_hybrid_add_full)
+
+# Print Result
+cat("C-index for Hybrid Additive Approach:", c_index_hybrid_add_full$concordance, "\n")
+```
+
+### Hybrid RBF Kernel
+
+```{r}
+# Hybrid RBF Kernel
+survsvm_hybrid_rbf_full <- survivalsvm(
+  Surv(time, status) ~ .,
+  data = veteran,
+  type = "hybrid",
+  gamma.mu = c(1, 0.5),  # Two numeric values
+  opt.meth = "quadprog",
+  kernel = "rbf_kernel",
+  diff.meth = "makediff1"
+)
+
+# Predict on the veteran dataset
+predictions_hybrid_rbf_full <- predict(survsvm_hybrid_rbf_full, newdata = veteran)
+predicted_risks_hybrid_rbf_full <- as.numeric(predictions_hybrid_rbf_full$predicted)
+
+# Compute C-index
+c_index_hybrid_rbf_full <- concordance(Surv(veteran$time, veteran$status) ~ predicted_risks_hybrid_rbf_full)
+
+# Print Result
+cat("C-index for Hybrid RBF Approach:", c_index_hybrid_rbf_full$concordance, "\n")
+```
+
+# 5-fold cross-validation
+
+### Selecting the same subset for all consistency across all methods and kernels
+
+```{r}
+set.seed(123)  # For reproducibility
+n_folds <- 5
+folds <- sample(rep(1:n_folds, length.out = nrow(veteran)))
+```
+
+# SSVR 5-fold
+
+### SSVR Linear 5-fold
+
+```{r}
+# Initialize a vector to store C-index values
+c_index_values_SVVR_linear <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_SVVR_linear <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "regression",
+    gamma.mu = 1,
+    opt.meth = "quadprog",
+    kernel = "lin_kernel"
+  )
+
+  # Predict on the test data
+  predictions_SVVR_linear <- predict(model_SVVR_linear, newdata = test_data)
+  predicted_risks_SVVR_linear <- as.numeric(predictions_SVVR_linear$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_SVVR_linear <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_SVVR_linear)
+  c_index_values_SVVR_linear[i] <- c_index_SVVR_linear$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (SVVR Linear):", c_index_SVVR_linear$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_SVVR_linear <- mean(c_index_values_SVVR_linear)
+sd_c_index_SVVR_linear <- sd(c_index_values_SVVR_linear)
+
+cat("Mean C-index across 5 folds (SVVR Linear):", mean_c_index_SVVR_linear, "\n")
+cat("Standard Deviation of C-index (SVVR Linear):", sd_c_index_SVVR_linear, "\n")
+```
+
+### SSVR Additive 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for additive kernel
+c_index_values_SVVR_add <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_SVVR_add <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "regression",
+    gamma.mu = 1,
+    opt.meth = "quadprog",
+    kernel = "add_kernel"  # Additive kernel
+  )
+
+  # Predict on the test data
+  predictions_SVVR_add <- predict(model_SVVR_add, newdata = test_data)
+  predicted_risks_SVVR_add <- as.numeric(predictions_SVVR_add$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_SVVR_add <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_SVVR_add)
+  c_index_values_SVVR_add[i] <- c_index_SVVR_add$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (SVVR Additive):", c_index_SVVR_add$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_SVVR_add <- mean(c_index_values_SVVR_add)
+sd_c_index_SVVR_add <- sd(c_index_values_SVVR_add)
+
+cat("Mean C-index across 5 folds (SVVR Additive):", mean_c_index_SVVR_add, "\n")
+cat("Standard Deviation of C-index (SVVR Additive):", sd_c_index_SVVR_add, "\n")
+```
+
+### SSVR RBF 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for RBF kernel
+c_index_values_SVVR_rbf <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_SVVR_rbf <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "regression",
+    gamma.mu = 1,
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel"  # RBF kernel
+  )
+
+  # Predict on the test data
+  predictions_SVVR_rbf <- predict(model_SVVR_rbf, newdata = test_data)
+  predicted_risks_SVVR_rbf <- as.numeric(predictions_SVVR_rbf$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_SVVR_rbf <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_SVVR_rbf)
+  c_index_values_SVVR_rbf[i] <- c_index_SVVR_rbf$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (SVVR RBF):", c_index_SVVR_rbf$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_SVVR_rbf <- mean(c_index_values_SVVR_rbf)
+sd_c_index_SVVR_rbf <- sd(c_index_values_SVVR_rbf)
+
+cat("Mean C-index across 5 folds (SVVR RBF):", mean_c_index_SVVR_rbf, "\n")
+cat("Standard Deviation of C-index (SVVR RBF):", sd_c_index_SVVR_rbf, "\n")
+```
+
+# Ranking (vanBelle1) 5-fold
+
+### vanBelle1 Linear 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for Vanbelle1 Linear
+c_index_values_vanbelle1_linear <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_vanbelle1_linear <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "vanbelle1",  # Vanbelle1 method
+    gamma.mu = 1,
+    opt.meth = "quadprog",
+    kernel = "lin_kernel",  # Linear kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_vanbelle1_linear <- predict(model_vanbelle1_linear, newdata = test_data)
+  predicted_risks_vanbelle1_linear <- as.numeric(predictions_vanbelle1_linear$predicted)
+
+  # Compute the C-index for the current fold
+c_index_vanbelle1_linear <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_vanbelle1_linear)
+  c_index_values_vanbelle1_linear[i] <- c_index_vanbelle1_linear$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Vanbelle1 Linear):", c_index_vanbelle1_linear$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_vanbelle1_linear <- mean(c_index_values_vanbelle1_linear)
+sd_c_index_vanbelle1_linear <- sd(c_index_values_vanbelle1_linear)
+
+cat("Mean C-index across 5 folds (Vanbelle1 Linear):", mean_c_index_vanbelle1_linear, "\n")
+cat("Standard Deviation of C-index (Vanbelle1 Linear):", sd_c_index_vanbelle1_linear, "\n")
+```
+
+### vanBelle1 Additive 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for Vanbelle1 Additive
+c_index_values_vanbelle1_add <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_vanbelle1_add <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "vanbelle1",  # Vanbelle1 method
+    gamma.mu = 1,
+    opt.meth = "quadprog",
+    kernel = "add_kernel",  # Additive kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_vanbelle1_add <- predict(model_vanbelle1_add, newdata = test_data)
+  predicted_risks_vanbelle1_add <- as.numeric(predictions_vanbelle1_add$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_vanbelle1_add <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_vanbelle1_add)
+  c_index_values_vanbelle1_add[i] <- c_index_vanbelle1_add$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Vanbelle1 Additive):", c_index_vanbelle1_add$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_vanbelle1_add <- mean(c_index_values_vanbelle1_add)
+sd_c_index_vanbelle1_add <- sd(c_index_values_vanbelle1_add)
+
+cat("Mean C-index across 5 folds (Vanbelle1 Additive):", mean_c_index_vanbelle1_add, "\n")
+cat("Standard Deviation of C-index (Vanbelle1 Additive):", sd_c_index_vanbelle1_add, "\n")
+```
+
+### vanBelle1 RBF 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for Vanbelle1 RBF
+c_index_values_vanbelle1_rbf <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_vanbelle1_rbf <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "vanbelle1",  # Vanbelle1 method
+    gamma.mu = 1,
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_vanbelle1_rbf <- predict(model_vanbelle1_rbf, newdata = test_data)
+  predicted_risks_vanbelle1_rbf <- as.numeric(predictions_vanbelle1_rbf$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_vanbelle1_rbf <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_vanbelle1_rbf)
+  c_index_values_vanbelle1_rbf[i] <- c_index_vanbelle1_rbf$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Vanbelle1 RBF):", c_index_vanbelle1_rbf$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_vanbelle1_rbf <- mean(c_index_values_vanbelle1_rbf)
+sd_c_index_vanbelle1_rbf <- sd(c_index_values_vanbelle1_rbf)
+
+cat("Mean C-index across 5 folds (Vanbelle1 RBF):", mean_c_index_vanbelle1_rbf, "\n")
+cat("Standard Deviation of C-index (Vanbelle1 RBF):", sd_c_index_vanbelle1_rbf, "\n")
+```
+
+# Hybrid 5-fold
+
+### Hybrid Linear 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for Hybrid Linear
+c_index_values_hybrid_linear <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_linear <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(0.5, 0.5),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "lin_kernel",  # Linear kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_linear <- predict(model_hybrid_linear, newdata = test_data)
+  predicted_risks_hybrid_linear <- as.numeric(predictions_hybrid_linear$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_linear <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_linear)
+  c_index_values_hybrid_linear[i] <- c_index_hybrid_linear$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid Linear):", c_index_hybrid_linear$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_linear <- mean(c_index_values_hybrid_linear)
+sd_c_index_hybrid_linear <- sd(c_index_values_hybrid_linear)
+
+cat("Mean C-index across 5 folds (Hybrid Linear):", mean_c_index_hybrid_linear, "\n")
+cat("Standard Deviation of C-index (Hybrid Linear):", sd_c_index_hybrid_linear, "\n")
+```
+
+### Hybrid Additive 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for Hybrid Additive
+c_index_values_hybrid_add <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_add <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(0.5, 0.5),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "add_kernel",  # Additive kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_add <- predict(model_hybrid_add, newdata = test_data)
+  predicted_risks_hybrid_add <- as.numeric(predictions_hybrid_add$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_add <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_add)
+  c_index_values_hybrid_add[i] <- c_index_hybrid_add$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid Additive):", c_index_hybrid_add$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_add <- mean(c_index_values_hybrid_add)
+sd_c_index_hybrid_add <- sd(c_index_values_hybrid_add)
+
+cat("Mean C-index across 5 folds (Hybrid Additive):", mean_c_index_hybrid_add, "\n")
+cat("Standard Deviation of C-index (Hybrid Additive):", sd_c_index_hybrid_add, "\n")
+```
+
+### Hybrid RBF 5-fold
+
+```{r}
+# Initialize a vector to store C-index values for Hybrid RBF
+c_index_values_hybrid_rbf <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_rbf <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(0.5, 0.5),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_rbf <- predict(model_hybrid_rbf, newdata = test_data)
+  predicted_risks_hybrid_rbf <- as.numeric(predictions_hybrid_rbf$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_rbf <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_rbf)
+  c_index_values_hybrid_rbf[i] <- c_index_hybrid_rbf$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid RBF):", c_index_hybrid_rbf$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_rbf <- mean(c_index_values_hybrid_rbf)
+sd_c_index_hybrid_rbf <- sd(c_index_values_hybrid_rbf)
+
+cat("Mean C-index across 5 folds (Hybrid RBF):", mean_c_index_hybrid_rbf, "\n")
+cat("Standard Deviation of C-index (Hybrid RBF):", sd_c_index_hybrid_rbf, "\n")
+```
+
+# Visualizations
+
+### SSVR Full Dataset
+
+```{r}
+# Extract C-index values
+c_index_linear_value <- c_index_linear$concordance
+c_index_additive_value <- c_index_additive$concordance
+c_index_rbf_value <- c_index_rbf$concordanc
+
+# Combine into a dataframe
+svvr_results <- data.frame(
+  Method = "SSVR",  # Single method
+  Kernel = c("linear", "additive", "RBF"),
+  `C-index` = c(
+    sprintf("%.2f", c_index_linear_value),
+    sprintf("%.2f", c_index_additive_value),
+    sprintf("%.2f", c_index_rbf_value)
+  )
+)
+
+# Print the dataframe
+print(svvr_results)
+```
+
+```{r}
+library(kableExtra)
+
+# Generate the table
+svvr_results %>%
+  kbl(
+    caption = "C-index Results for SSVR Method by Kernel",
+    col.names = c("Method", "Kernel", "C-index (SD)"),
+    align = "lcc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+### vanBelle1 Full Dataset
+
+```{r}
+# Extract C-index values for the full dataset
+c_index_vanbelle1_linear_full_value <- c_index_vanbelle1_linear_full$concordance
+c_index_vanbelle1_add_full_value <- c_index_vanbelle1_add_full$concordance
+c_index_vanbelle1_rbf_full_value <- c_index_vanbelle1_rbf_full$concordance
+
+# Combine results into a dataframe
+vanbelle1_results_full <- data.frame(
+  Method = "vanbelle1",  # Single method
+  Kernel = c("linear", "additive", "RBF"),
+  `C-index` = c(
+    sprintf("%.2f", c_index_vanbelle1_linear_full_value),
+    sprintf("%.2f", c_index_vanbelle1_add_full_value),
+    sprintf("%.2f", c_index_vanbelle1_rbf_full_value)
+  )
+)
+
+# Print the dataframe
+print(vanbelle1_results_full)
+
+# Generate the table
+vanbelle1_results_full %>%
+  kbl(
+    caption = "C-index Results for Vanbelle1 Method by Kernel (Full Data)",
+    col.names = c("Method", "Kernel", "C-index"),
+    align = "lcc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+### Hybrid Full Dataset
+
+```{r}
+# Extract C-index values for the full dataset
+c_index_hybrid_linear_full_value <- c_index_hybrid_linear_full$concordance
+c_index_hybrid_add_full_value <- c_index_hybrid_add_full$concordance
+c_index_hybrid_rbf_full_value <- c_index_hybrid_rbf_full$concordance
+
+# Combine results into a dataframe
+hybrid_results_full <- data.frame(
+  Method = "Hybrid",  # Single method
+  Kernel = c("linear", "additive", "RBF"),
+  `C-index (SD)` = c(
+    sprintf("%.2f", c_index_hybrid_linear_full_value),
+    sprintf("%.2f", c_index_hybrid_add_full_value),
+    sprintf("%.2f", c_index_hybrid_rbf_full_value)
+  )
+)
+
+# Print the dataframe
+print(hybrid_results_full)
+
+# Generate the table
+hybrid_results_full %>%
+  kbl(
+    caption = "C-index Results for Hybrid Method by Kernel (Full Data)",
+    col.names = c("Method", "Kernel", "C-index"),
+    align = "lcc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+### SSVR 5-fold
+
+```{r}
+# Mean and SD for each kernel
+mean_c_index_SVVR_linear <- mean(c_index_values_SVVR_linear)
+sd_c_index_SVVR_linear <- sd(c_index_values_SVVR_linear)
+
+mean_c_index_SVVR_add <- mean(c_index_values_SVVR_add)
+sd_c_index_SVVR_add <- sd(c_index_values_SVVR_add)
+
+mean_c_index_SVVR_rbf <- mean(c_index_values_SVVR_rbf)
+sd_c_index_SVVR_rbf <- sd(c_index_values_SVVR_rbf)
+
+# Combine results into a dataframe
+svvr_results <- data.frame(
+  Method = "SSVR",  # Single method
+  Kernel = c("linear", "additive", "RBF"),
+  `Mean C-index` = c(mean_c_index_SVVR_linear, mean_c_index_SVVR_add, mean_c_index_SVVR_rbf),
+  `SD` = c(sd_c_index_SVVR_linear, sd_c_index_SVVR_add, sd_c_index_SVVR_rbf)
+)
+
+# Print the dataframe
+print(svvr_results)
+```
+
+```{r}
+library(kableExtra)
+
+# Generate the table
+svvr_results %>%
+  kbl(
+    caption = "Mean C-index and SD for SSVR Method by Kernel",
+    col.names = c("Method", "Kernel", "Mean C-index", "SD"),
+    align = "lccc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+### vanBelle 5-fold
+
+```{r}
+# Mean and SD for Vanbelle1 Linear Kernel
+mean_c_index_vanbelle1_linear <- mean(c_index_values_vanbelle1_linear)
+sd_c_index_vanbelle1_linear <- sd(c_index_values_vanbelle1_linear)
+
+# Mean and SD for Vanbelle1 Additive Kernel
+mean_c_index_vanbelle1_add <- mean(c_index_values_vanbelle1_add)
+sd_c_index_vanbelle1_add <- sd(c_index_values_vanbelle1_add)
+
+# Mean and SD for Vanbelle1 RBF Kernel
+mean_c_index_vanbelle1_rbf <- mean(c_index_values_vanbelle1_rbf)
+sd_c_index_vanbelle1_rbf <- sd(c_index_values_vanbelle1_rbf)
+
+# Combine results into a dataframe
+vanbelle1_results <- data.frame(
+  Method = "Vanbelle1",  # Single method
+  Kernel = c("linear", "additive", "RBF"),
+  `Mean C-index` = c(mean_c_index_vanbelle1_linear, mean_c_index_vanbelle1_add, mean_c_index_vanbelle1_rbf),
+  `SD` = c(sd_c_index_vanbelle1_linear, sd_c_index_vanbelle1_add, sd_c_index_vanbelle1_rbf)
+)
+
+# Print the dataframe
+print(vanbelle1_results)
+```
+
+```{r}
+# Generate the table
+vanbelle1_results %>%
+  kbl(
+    caption = "Mean C-index and SD for Vanbelle1 Method by Kernel",
+    col.names = c("Method", "Kernel", "Mean C-index", "SD"),
+    align = "lccc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+### Hybrid 5-fold
+
+```{r}
+# Mean and SD for Hybrid Linear Kernel
+mean_c_index_hybrid_linear <- mean(c_index_values_hybrid_linear)
+sd_c_index_hybrid_linear <- sd(c_index_values_hybrid_linear)
+
+# Mean and SD for Hybrid Additive Kernel
+mean_c_index_hybrid_add <- mean(c_index_values_hybrid_add)
+sd_c_index_hybrid_add <- sd(c_index_values_hybrid_add)
+
+# Mean and SD for Hybrid RBF Kernel
+mean_c_index_hybrid_rbf <- mean(c_index_values_hybrid_rbf)
+sd_c_index_hybrid_rbf <- sd(c_index_values_hybrid_rbf)
+
+# Combine results into a dataframe
+hybrid_results <- data.frame(
+  Method = "Hybrid",  # Single method
+  Kernel = c("linear", "additive", "RBF"),
+  `Mean C-index` = c(mean_c_index_hybrid_linear, mean_c_index_hybrid_add, mean_c_index_hybrid_rbf),
+  `SD` = c(sd_c_index_hybrid_linear, sd_c_index_hybrid_add, sd_c_index_hybrid_rbf)
+)
+
+# Print the dataframe
+print(hybrid_results)
+```
+
+```{r}
+
+# Generate the table
+hybrid_results %>%
+  kbl(
+    caption = "Mean C-index and SD for Hybrid Method by Kernel",
+    col.names = c("Method", "Kernel", "Mean C-index", "SD"),
+    align = "lccc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+### All methods 5-fold
+
+```{r}
+# Combine all methods and their results into a single dataframe
+combined_results <- data.frame(
+  Method = c(rep("SSVR", 3), rep("Vanbelle1", 3), rep("Hybrid", 3)),
+  Kernel = rep(c("linear", "additive", "RBF"), 3),
+  `Mean C-index` = c(
+    mean_c_index_SVVR_linear, mean_c_index_SVVR_add, mean_c_index_SVVR_rbf,  # SVVR
+    mean_c_index_vanbelle1_linear, mean_c_index_vanbelle1_add, mean_c_index_vanbelle1_rbf,  # Vanbelle1
+    mean_c_index_hybrid_linear, mean_c_index_hybrid_add, mean_c_index_hybrid_rbf  # Hybrid
+  ),
+  `SD` = c(
+    sd_c_index_SVVR_linear, sd_c_index_SVVR_add, sd_c_index_SVVR_rbf,  # SVVR
+    sd_c_index_vanbelle1_linear, sd_c_index_vanbelle1_add, sd_c_index_vanbelle1_rbf,  # Vanbelle1
+    sd_c_index_hybrid_linear, sd_c_index_hybrid_add, sd_c_index_hybrid_rbf  # Hybrid
+  )
+)
+
+# Print the dataframe
+print(combined_results)
+```
+
+```{r}
+library(kableExtra)
+
+# Generate the combined table
+combined_results %>%
+  kbl(
+    caption = "Mean C-index and SD for SVVR, Vanbelle1, and Hybrid Methods by Kernel",
+    col.names = c("Method", "Kernel", "Mean C-index", "SD"),
+    align = "lccc",
+    booktabs = TRUE
+  ) %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+# Novel Analysis
+
+# Gamma hyperparameter tuning for Hybrid
+
+### (0.5, 0.5) - Equal regression and ranking
+
+```{r}
+# Initialize a vector to store C-index values for Hybrid RBF
+c_index_values_hybrid_rbf_1 <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_rbf_1 <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(0.5, 0.5),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_rbf_1 <- predict(model_hybrid_rbf_1, newdata = test_data)
+  predicted_risks_hybrid_rbf_1 <- as.numeric(predictions_hybrid_rbf_1$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_rbf_1 <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_rbf_1)
+  c_index_values_hybrid_rbf_1[i] <- c_index_hybrid_rbf_1$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid RBF):", c_index_hybrid_rbf_1$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_rbf_1 <- mean(c_index_values_hybrid_rbf_1)
+sd_c_index_hybrid_rbf_1 <- sd(c_index_values_hybrid_rbf_1)
+
+cat("Mean C-index across 5 folds (Hybrid RBF):", mean_c_index_hybrid_rbf_1, "\n")
+cat("Standard Deviation of C-index (Hybrid RBF):", sd_c_index_hybrid_rbf_1, "\n")
+```
+
+### (2, 0.5) - Prioritizes Regression
+
+```{r}
+c_index_values_hybrid_rbf_2 <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_rbf_2 <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(2, 0.5),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_rbf_2 <- predict(model_hybrid_rbf_2, newdata = test_data)
+  predicted_risks_hybrid_rbf_2 <- as.numeric(predictions_hybrid_rbf_2$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_rbf_2 <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_rbf_2)
+  c_index_values_hybrid_rbf_2[i] <- c_index_hybrid_rbf_2$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid RBF):", c_index_hybrid_rbf_2$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_rbf_2 <- mean(c_index_values_hybrid_rbf_2)
+sd_c_index_hybrid_rbf_2 <- sd(c_index_values_hybrid_rbf_2)
+
+cat("Mean C-index across 5 folds (Hybrid RBF):", mean_c_index_hybrid_rbf_2, "\n")
+cat("Standard Deviation of C-index (Hybrid RBF):", sd_c_index_hybrid_rbf_2, "\n")
+```
+
+### (0.5, 2) - Prioritizes Ranking
+
+```{r}
+c_index_values_hybrid_rbf_3 <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_rbf_3 <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(0.5, 2),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_rbf_3 <- predict(model_hybrid_rbf_3, newdata = test_data)
+  predicted_risks_hybrid_rbf_3 <- as.numeric(predictions_hybrid_rbf_3$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_rbf_3 <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_rbf_3)
+  c_index_values_hybrid_rbf_3[i] <- c_index_hybrid_rbf_3$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid RBF):", c_index_hybrid_rbf_3$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_rbf_3 <- mean(c_index_values_hybrid_rbf_3)
+sd_c_index_hybrid_rbf_3 <- sd(c_index_values_hybrid_rbf_3)
+
+cat("Mean C-index across 5 folds (Hybrid RBF):", mean_c_index_hybrid_rbf_3, "\n")
+cat("Standard Deviation of C-index (Hybrid RBF):", sd_c_index_hybrid_rbf_3, "\n")
+```
+
+### (1, 0.1) - Extreme Regression
+
+```{r}
+c_index_values_hybrid_rbf_4 <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_rbf_4 <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(1, 0.1),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_rbf_4 <- predict(model_hybrid_rbf_4, newdata = test_data)
+  predicted_risks_hybrid_rbf_4 <- as.numeric(predictions_hybrid_rbf_4$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_rbf_4 <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_rbf_4)
+  c_index_values_hybrid_rbf_4[i] <- c_index_hybrid_rbf_4$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid RBF):", c_index_hybrid_rbf_4$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_rbf_4 <- mean(c_index_values_hybrid_rbf_4)
+sd_c_index_hybrid_rbf_4 <- sd(c_index_values_hybrid_rbf_4)
+
+cat("Mean C-index across 5 folds (Hybrid RBF):", mean_c_index_hybrid_rbf_4, "\n")
+cat("Standard Deviation of C-index (Hybrid RBF):", sd_c_index_hybrid_rbf_4, "\n")
+```
+
+### (0.1, 1) - Extreme Ranking
+
+```{r}
+c_index_values_hybrid_rbf_5 <- numeric(n_folds)
+
+for (i in 1:n_folds) {
+  # Split data into training and testing sets using common folds
+  train_data <- veteran[folds != i, ]
+  test_data <- veteran[folds == i, ]
+
+  # Train the model on the training data
+  model_hybrid_rbf_5 <- survivalsvm(
+    Surv(time, status) ~ .,
+    data = train_data,
+    type = "hybrid",  # Hybrid method
+    gamma.mu = c(0.1, 1),  # Two values for regression and ranking weights
+    opt.meth = "quadprog",
+    kernel = "rbf_kernel",  # RBF kernel
+    diff.meth = "makediff1"  # Specify difference method
+  )
+
+  # Predict on the test data
+  predictions_hybrid_rbf_5 <- predict(model_hybrid_rbf_5, newdata = test_data)
+  predicted_risks_hybrid_rbf_5 <- as.numeric(predictions_hybrid_rbf_5$predicted)
+
+  # Compute the C-index for the current fold
+  c_index_hybrid_rbf_5 <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks_hybrid_rbf_5)
+  c_index_values_hybrid_rbf_5[i] <- c_index_hybrid_rbf_5$concordance
+
+  # Print the result for the current fold
+  cat("Fold", i, "- C-index (Hybrid RBF):", c_index_hybrid_rbf_5$concordance, "\n")
+}
+
+# Evaluate Overall Performance
+mean_c_index_hybrid_rbf_5 <- mean(c_index_values_hybrid_rbf_5)
+sd_c_index_hybrid_rbf_5 <- sd(c_index_values_hybrid_rbf_5)
+
+cat("Mean C-index across 5 folds (Hybrid RBF):", mean_c_index_hybrid_rbf_5, "\n")
+cat("Standard Deviation of C-index (Hybrid RBF):", sd_c_index_hybrid_rbf_5, "\n")
+```
+
+# Visualizing Gamma Value Comparisons
+
+```{r}
+# Define gamma.mu combinations to test
+gamma_values <- list(
+  c(0.5, 0.5),
+  c(2, 0.5),
+  c(0.5, 2),
+  c(1, 0.1),
+  c(0.1, 1)
+)
+
+# Initialize a data frame to store results
+results <- data.frame(Gamma1 = numeric(), Gamma2 = numeric(), MeanCIndex = numeric(), StdDevCIndex = numeric())
+
+for (gamma in gamma_values) {
+  c_index_values <- numeric(n_folds)
+  
+  for (i in 1:n_folds) {
+    # Split data into training and testing sets
+    train_data <- veteran[folds != i, ]
+    test_data <- veteran[folds == i, ]
+    
+    # Train the hybrid model with the current gamma
+    model_hybrid <- survivalsvm(
+      Surv(time, status) ~ .,
+      data = train_data,
+      type = "hybrid",
+      gamma.mu = gamma,  # Set gamma values
+      opt.meth = "quadprog",
+      kernel = "rbf_kernel",  # Example with additive kernel
+      diff.meth = "makediff1"
+    )
+    
+    # Predict and compute C-index
+    predictions <- predict(model_hybrid, newdata = test_data)
+    predicted_risks <- as.numeric(predictions$predicted)
+    c_index <- concordance(Surv(test_data$time, test_data$status) ~ predicted_risks)
+    c_index_values[i] <- c_index$concordance
+  }
+  
+  # Store results for this gamma
+  results <- rbind(results, data.frame(
+    Gamma1 = gamma[1],
+    Gamma2 = gamma[2],
+    MeanCIndex = mean(c_index_values),
+    StdDevCIndex = sd(c_index_values)
+  ))
+}
+
+# Print results
+print(results)
+```
+
+```{r}
+ggplot(results, aes(x = as.factor(Gamma1), y = MeanCIndex, color = as.factor(Gamma2))) +
+  geom_point(size = 4) +
+  scale_color_manual(
+    values = c("0.1" = "purple", "0.5" = "blue", "1" = "green", "2" = "red"),
+    name = "Ranking Weight (Gamma2)"
+  ) +
+  labs(
+    title = "Gamma Hyperparameter Tuning",
+    x = "Regression Weight (Gamma1)",
+    y = "Mean C Index Value", 
+    color = "Ranking Weight (Gamma2)"
+  ) +
+  theme_minimal()
+```
