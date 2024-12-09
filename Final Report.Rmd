@@ -34,7 +34,7 @@ Every day, we live a life of unpredictable outcomes in a world full of uncertain
 
 This report delves into the research presented in *“Support Vector Machines for Survival Analysis with R”* by Césaire J. K. Fouodo, Inke R. König, Claus Weihs, Andreas Ziegler, and Marvin N. Wright, with an expanded focus on new analyses and practical applications of survival SVMs. In the original study, the authors identified limitations in traditional survival analysis methods, such as the Cox Proportional Hazards model, when applied to high-dimensional datasets. These methods often rely on assumptions that may not always hold true and require and demand very high computational power. To overcome these challenges, the researchers proposed the use of support vector machines (SVMs) as an alternative approach.
 
-Building upon the foundational methods described in the paper, this report recreates the analysis by implementing survival SVMs with various kernels and approaches (e.g., regression, Vanbelle, and hybrid methods). This report goes into a detailed evaluation of model performance—with comparisons for various C-index values (further explored later in this paper)—and extends the analysis by exploring hyperparameter tuning and visualizations. This report aims to provide deeper insights into the strengths and practical limitations of survival SVMs. Furthermore, it incorporates novel visualizations and critical interpretations of the results to bridge the gap between sample models and real-world applications.
+Building upon the foundational methods described in the paper, this report recreates the analysis by implementing survival SVMs with various kernels and approaches (e.g., regression, Vanbelle, and hybrid methods). This report goes into a detailed evaluation of model performance—with comparisons for various C-index values (further explored later in this paper)—and extends the analysis by exploring hyperparameter tuning and visualizations. This report aims to provide deeper insights into the strengths and practical limitations of survival SVMs. Furthermore, we address the ethical implications and potential impacts of the use of such technology especially in the medical sphere and how it can be regulated.
 
 ## Analysis of Statistical Methods
 
@@ -73,7 +73,7 @@ To approach the regression method described in the paper correctly, I did a prel
 Following this preliminary test, I implemented the initial methods using the full veteran dataset. Starting with the regression method, I tested it across all three kernel types—linear, RBF, and additive—. For each kernel, the C-Index was calculated to assess the predictive accuracy of the models. As seen in the figure below, the linear kernel achieved a C-Index of 0.71, the additive kernel outperformed slightly with 0.74, and the RBF kernel demonstrated the highest performance at 0.80. (Note: For the RBF kernel, I was unable to change the `sigma` value and therefore we are using the default value across all our tests.)
 
 ::: {style="text-align: center;"}
-![Image: SSVR Regression Approach - Full dataset](assets/SSVR Kernels.png)
+![Image: SSVR Regression Approach - Full dataset](assets/SSVR%20Kernels.png)
 :::
 
 Similarly, I implemented the Vanbelle1 approach using the full veteran dataset and evaluated its performance across the three kernel types—linear, additive, and RBF. vanBelle1 implements a ranking-based approach that focuses on pairwise comparisons between survival times. The results from my analysis are shown in the table below, with the linear and additive kernels both achieving a C-Index of 0.61, while the RBF kernel yielded a slightly lower value of 0.53. The RBF kernel introduces flexibility in modeling non-linear relationships in the data. While this flexibility is advantageous for datasets with non-linear patterns, it can lead to overfitting or suboptimal performance in datasets without such a structure. Additionally, the RBF kernel depends heavily on hyperparameter tuning, specifically the sigma parameter, which controls the smoothness of the decision boundary. Since we are using the default values here, it is possible we see suboptimal performance.
@@ -90,7 +90,7 @@ As shown in the table below, the linear kernel achieved a C-Index of 0.70, while
 ![Image: Hybrid Approach - Full Dataset](assets/Hybrid%20Kernels.png)
 :::
 
-### 5-fold Cross-Aalidation For All Approaches
+### 5-fold Cross-Validation For All Approaches
 
 Having done analysis on the full `veteran` dataset, I next replicated the 5-fold cross-validation approach outlined in the original study, beginning with the regression approach. The results of my 5-fold analysis are presented in the table below, showing a mean C-Index of 0.72 (0.04) for the linear kernel, 0.69 (0.04) for the additive kernel, and 0.52 (0.03) for the RBF kernel. Comparing these to the original study, where the linear kernel achieved a mean C-Index of 0.69 (0.03), the additive kernel reached 0.71 (0.05), and the RBF kernel scored 0.70 (0.04), some differences are quite clear.
 
@@ -98,7 +98,7 @@ Once again, the RBF showed the worst results, which can likely be attributed to 
 
 ::: {style="text-align: center"}
 ::: {style="text-align: center"}
-![Image: SSVR Regression Approach - 5-fold](assets/SSVR 5-fold.png)
+![Image: SSVR Regression Approach - 5-fold](assets/SSVR%205-fold.png)
 :::
 :::
 
@@ -113,7 +113,7 @@ However, the hybrid approach is the one that we need to focus on. My initial run
 ::: {style="text-align: center"}
 ![Image: Hybrid Approach - 5-fold](assets/Hybrid%205-fold.png){width="364"}
 
-![Image: All Methods 5-fold Results](assets/All Methods 5-fold.png)
+![Image: All Methods 5-fold Results](assets/All%20Methods%205-fold.png)
 :::
 
 Note: The above table shows the results for all the approaches in one consolidated table:
@@ -138,7 +138,7 @@ I ran the test for 5 combinations of ( $\gamma_1$ and $\gamma_2$):
     ![Image: Novel Analysis: Hybrid RBF Comparison](assets/Novel%20Analysis.png)
     :::
 
-The results from each of those runs can be found in the `.rmd` file under the Novel Analysis heading. The analysis of the RBF kernel in the hybrid method showed consistently poor performance across various gamma pairings, as illustrated in the graph. Despite testing multiple combinations of regression ( $\gamma_1$ ) and ranking ( $\gamma_2$ ) weights, the C-index values remained notably low, with minimal improvement across configurations. The highest C-Index value that we found was with the weights (0.5, 2), which makes sense as it prioritizes Ranking. But what is surprising is that (0.1, 1) performed quite poorly, with the majority of the priority going to Ranking. This suggests that Regression weight is still important and plays some role in helping gain a higher C-Index value.
+The results from each of those runs can be found in the `STOR390 Final.rmd` file under the Novel Analysis heading. The analysis of the RBF kernel in the hybrid method showed consistently poor performance across various gamma pairings, as illustrated in the graph. Despite testing multiple combinations of regression ( $\gamma_1$ ) and ranking ( $\gamma_2$ ) weights, the C-index values remained notably low, with minimal improvement across configurations. The highest C-Index value that we found was with the weights (0.5, 2), which makes sense as it prioritizes Ranking. But what is surprising is that (0.1, 1) performed quite poorly, with the majority of the priority going to Ranking. This suggests that Regression weight is still important and plays some role in helping gain a higher C-Index value.
 
 But values with minimal difference across the board suggests that the RBF kernel struggled to generalize effectively within the veteran dataset under the hybrid approach. While the hybrid method is designed to balance precision and ranking, the RBF kernel’s performance appears particularly sensitive to hyperparameter choices, including gamma values and more importantly the RBF kernel’s `sigma` parameter, which governs its smoothness and complexity.
 

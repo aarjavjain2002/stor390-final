@@ -412,10 +412,10 @@ This report goes into a detailed evaluation of model performance—with
 comparisons for various C-index values (further explored later in this
 paper)—and extends the analysis by exploring hyperparameter tuning and
 visualizations. This report aims to provide deeper insights into the
-strengths and practical limitations of survival SVMs. Furthermore, it
-incorporates novel visualizations and critical interpretations of the
-results to bridge the gap between sample models and real-world
-applications.</p>
+strengths and practical limitations of survival SVMs. Furthermore, we
+address the ethical implications and potential impacts of the use of
+such technology especially in the medical sphere and how it can be
+regulated.</p>
 </div>
 <div id="analysis-of-statistical-methods" class="section level2">
 <h2>Analysis of Statistical Methods</h2>
@@ -567,8 +567,8 @@ strengths of both regression and ranking approaches.</p>
 </div>
 </div>
 </div>
-<div id="fold-cross-aalidation-for-all-approaches" class="section level3">
-<h3>5-fold Cross-Aalidation For All Approaches</h3>
+<div id="fold-cross-validation-for-all-approaches" class="section level3">
+<h3>5-fold Cross-Validation For All Approaches</h3>
 <p>Having done analysis on the full <code>veteran</code> dataset, I next
 replicated the 5-fold cross-validation approach outlined in the original
 study, beginning with the regression approach. The results of my 5-fold
@@ -655,10 +655,10 @@ Comparison</div>
 </div></li>
 </ul>
 <p>The results from each of those runs can be found in the
-<code>.rmd</code> file under the Novel Analysis heading. The analysis of
-the RBF kernel in the hybrid method showed consistently poor performance
-across various gamma pairings, as illustrated in the graph. Despite
-testing multiple combinations of regression ( <span class="math inline">\(\gamma_1\)</span> ) and ranking ( <span class="math inline">\(\gamma_2\)</span> ) weights, the C-index values
+<code>STOR390 Final.rmd</code> file under the Novel Analysis heading.
+The analysis of the RBF kernel in the hybrid method showed consistently
+poor performance across various gamma pairings, as illustrated in the
+graph. Despite testing multiple combinations of regression ( <span class="math inline">\(\gamma_1\)</span> ) and ranking ( <span class="math inline">\(\gamma_2\)</span> ) weights, the C-index values
 remained notably low, with minimal improvement across configurations.
 The highest C-Index value that we found was with the weights (0.5, 2),
 which makes sense as it prioritizes Ranking. But what is surprising is
